@@ -2,26 +2,22 @@ import fs from 'fs';
 import path from 'path';
 import { Student } from './types';
 
-// In-memory database for development
+// In-memory database for development and serverless
 interface Database {
   students: { [id: number]: Student };
   users: { [id: number]: any };
-  prepare: (sql: string) => any;
-  exec: (sql: string) => void;
 }
 
-// File-based storage
+// File-based storage (for local development only)
+const isProduction = process.env.NODE_ENV === 'production';
 const dataDir = path.join(process.cwd(), 'data');
 const studentsFile = path.join(dataDir, 'students.json');
 const usersFile = path.join(dataDir, 'users.json');
 
-// Ensure data directory exists
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
 // Load data from files
 function loadStudents(): { [id: number]: Student } {
+  if (isProduction) return {};
+  
   try {
     if (fs.existsSync(studentsFile)) {
       return JSON.parse(fs.readFileSync(studentsFile, 'utf-8'));
@@ -33,6 +29,8 @@ function loadStudents(): { [id: number]: Student } {
 }
 
 function loadUsers(): { [id: number]: any } {
+  if (isProduction) return {};
+  
   try {
     if (fs.existsSync(usersFile)) {
       return JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
@@ -43,13 +41,31 @@ function loadUsers(): { [id: number]: any } {
   return {};
 }
 
-// Save data to files
+// Save data to files (only in development)
 function saveStudents(students: { [id: number]: Student }) {
-  fs.writeFileSync(studentsFile, JSON.stringify(students, null, 2));
+  if (isProduction) return;
+  
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(studentsFile, JSON.stringify(students, null, 2));
+  } catch (error) {
+    console.error('Error saving students:', error);
+  }
 }
 
 function saveUsers(users: { [id: number]: any }) {
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+  if (isProduction) return;
+  
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+  } catch (error) {
+    console.error('Error saving users:', error);
+  }
 }
 
 // In-memory database
@@ -67,7 +83,9 @@ const db: any = {
 
   // Custom methods
   getStudents: function() {
-    return Object.values(this.students);
+    return Object.values(this.students).sort((a: any, b: any) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   },
 
   getStudent: function(id: number) {
@@ -109,6 +127,22 @@ const db: any = {
       return student;
     }
     return null;
+  },
+
+  addUser: function(user: any) {
+    const id = Math.max(...Object.keys(this.users).map(Number), 0) + 1;
+    const newUser = { id, ...user };
+    this.users[id] = newUser;
+    saveUsers(this.users);
+    return newUser;
+  },
+
+  getUser: function(id: number) {
+    return this.users[id];
+  },
+
+  getUserByEmail: function(email: string) {
+    return Object.values(this.users).find((u: any) => u.email === email);
   },
 };
 

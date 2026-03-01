@@ -95,9 +95,29 @@ curl -X DELETE http://localhost:3000/api/students?id=1
 
 ## Déploiement sur Vercel
 
-1. Connectez votre dépôt GitHub à Vercel
-2. Vercel détectera automatiquement les paramètres Next.js
-3. Cliquez sur "Deploy"
+### Méthode 1 : Interface Vercel (Recommandée)
+
+1. Allez sur [Vercel](https://vercel.com)
+2. Cliquez sur "New Project"
+3. Importez ce repo GitHub : `https://github.com/atbatou-sketch/sm.git`
+4. Vercel détectera automatiquement les paramètres Next.js
+5. Cliquez sur "Deploy"
+
+### Méthode 2 : CLI Vercel
+
+```bash
+npm install -g vercel
+vercel
+```
+
+### Notes Importantes
+
+- ⚠️ **Stockage des données** : En développement, les données sont stockées dans `data/students.json`. Sur Vercel (serverless), les données persistent uniquement en mémoire pendant l'exécution de chaque fonction. Pour une persistance permanente en production, intégrez une base de données cloud (Supabase PostgreSQL, MongoDB, FaunaDB, etc.)
+
+- **Configuration recommandée pour production** :
+  - Remplacez le système de fichiers par une API de base de données
+  - Utilisez des variables d'environnement pour les credentials
+  - Implémentez NextAuth avec OAuth pour l'authentification
 
 ## Technologies Utilisées
 
